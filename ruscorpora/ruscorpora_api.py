@@ -9,15 +9,17 @@ class RusCorpora(object):
     """API class for RusCorpora (ruscorpora.ru)"""
     def __init__(self):
         self.sleeptime = 10
+        self.ambiguity = False
 
     def get_corpora_chars(self, word, ambiguity=False):
+        self.ambiguity = ambiguity
         url = self._create_url(quote(word), ambiguity)
         while True:
-            result, soup = RusCorpora()._get_soup(url)
+            result, soup = self._get_soup(url)
             if result:
-                return RusCorpora()._extract_frequency(soup)
+                return self._extract_frequency(soup)
             elif not result and soup != 429:
-                return RusCorpora()._extract_frequency()
+                return self._extract_frequency()
 
     @staticmethod
     def _create_url(word, ambiguity=False):
@@ -49,8 +51,7 @@ class RusCorpora(object):
         except UnboundLocalError:
             print(parse_qs(urlparse(url).query))
 
-    @staticmethod
-    def _extract_frequency(soup=None):
+    def _extract_frequency(self, soup=None):
         if not soup:
             return {"total_words": 0,
                     "total_docs": 0,
@@ -62,7 +63,10 @@ class RusCorpora(object):
                     "total_docs": 0,
                     "hits_words": 0,
                     "hits_docs": 0}
-        total_docs, total_words, word_docs, word_uses = [int(x.replace(' ', '')) for x in all_stats[2:]]
+        if self.ambiguity:
+            total_docs, total_words, word_docs, word_uses = [int(x.replace(' ', '')) for x in all_stats[2:]]
+        else:
+            total_docs, total_words, word_docs, word_uses = [int(x.replace(' ', '')) for x in all_stats]
         frequency_chars = dict()
         frequency_chars['total_words'] = total_words
         frequency_chars['total_docs'] = total_docs
