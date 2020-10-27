@@ -1,3 +1,3 @@
 [submodule "morpheme_extraction/NeuralMorphemeSegmentation"]
 	path = morpheme_extraction/NeuralMorphemeSegmentation
-	url = https://github.com/AlexeySorokin/NeuralMorphemeSegmentation.git
+	url = https://github.com/morozowdmitry/NeuralMorphemeSegmentation.git
