@@ -57,6 +57,11 @@ class RusCorpora(object):
                     "hits_words": 0,
                     "hits_docs": 0}
         all_stats = [x.get_text() for x in soup.find_all(class_="stat-number")]
+        if len(all_stats) == 0:
+            return {"total_words": 0,
+                    "total_docs": 0,
+                    "hits_words": 0,
+                    "hits_docs": 0}
         total_docs, total_words, word_docs, word_uses = [int(x.replace(' ', '')) for x in all_stats[2:]]
         frequency_chars = dict()
         frequency_chars['total_words'] = total_words
