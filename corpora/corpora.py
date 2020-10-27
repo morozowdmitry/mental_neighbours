@@ -22,4 +22,6 @@ def get_ipm(word, corpora):
     else:
         print(f"no {word} in dictionary, query to ruscorpora")
         word_chars = corpora.get_corpora_chars(word)
-        return word_chars['hits_words'] / word_chars['total_words'] * (10**6)
+        if word_chars['hits_words'] != 0:
+            return word_chars['hits_words'] / word_chars['total_words'] * (10**6)
+        return 0.

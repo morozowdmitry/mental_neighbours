@@ -1,5 +1,10 @@
 from pylev import levenshtein
 
+import json
+
+import pathlib
+data_folder = pathlib.Path(__file__).parent.parent.absolute() / 'data'
+
 
 def levenstein_close(word_first, word_second, max_dist=2):
     if word_first == word_second:
@@ -10,10 +15,13 @@ def levenstein_close(word_first, word_second, max_dist=2):
     return dist
 
 
-def levenstein_neighborhood(word, dictionary):
+def levenstein_neighborhood(word, dictionary=None):
     neighborhood = dict()
+    if not dictionary:
+        with open(data_folder / 'tikhonov_corrected/tikhonov.json', 'r') as f:
+            dictionary = json.load(f)
     for candidate in dictionary.keys():
         dist = levenstein_close(word, candidate, max_dist=2)
         if dist >= 0:
             neighborhood[candidate] = dist
-    return neighborhood
+    return list(neighborhood.keys())

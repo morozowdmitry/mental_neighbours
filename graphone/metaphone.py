@@ -1,5 +1,10 @@
 import re
 
+import json
+
+import pathlib
+data_folder = pathlib.Path(__file__).parent.parent.absolute() / 'data'
+
 
 def _collapse_duplicates(word):
     result = re.sub(r"(.)\1+", r"\1", word)
@@ -57,10 +62,16 @@ def convert2metaphone_code(word):
     return code
 
 
-def metaphone_neighborhood(word, dictionary, convert_dictionary=True):
+def metaphone_neighborhood(word, dictionary=None, convert_dictionary=True):
     neighborhood = list()
     word_code = convert2metaphone_code(word)
-    if convert_dictionary:
+    if not dictionary:
+        with open(data_folder / 'metaphone_codes.json', 'r') as f:
+            dictionary = json.load(f)
+        for candidate, code in dictionary.items():
+            if code == word_code and candidate != word:
+                neighborhood.append(candidate)
+    elif convert_dictionary:
         for candidate in dictionary.keys():
             candidate_code = convert2metaphone_code(candidate)
             if candidate_code == word_code and candidate != word:
