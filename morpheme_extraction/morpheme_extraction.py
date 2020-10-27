@@ -1,14 +1,7 @@
-import os
-import sys
-
 import json
 
-DIR_PATH = os.path.dirname(os.path.realpath(__file__))
-ROOT_PATH = os.path.abspath(os.path.join(DIR_PATH, os.pardir))
-sys.path.insert(1, ROOT_PATH)
-DATA_DIR = os.path.join(ROOT_PATH, 'data/tikhonov_corrected')
-NMS_DIR = os.path.join(ROOT_PATH, 'morpheme_extraction.py/NeuralMorphemeSegmentation')
-sys.path.insert(0, NMS_DIR)
+import pathlib
+data_folder = pathlib.Path(__file__).parent.parent.absolute() / 'data/tikhonov_corrected'
 
 from morpheme_extraction.NeuralMorphemeSegmentation.neural_morph_segm import Partitioner, measure_quality
 from morpheme_extraction.NeuralMorphemeSegmentation.read import read_BMES
@@ -33,21 +26,20 @@ def predict_types(model, words):
 
 class MorphemePredictor(object):
     def __init__(self, nepochs):
-        x_train, y_train = read_BMES(f'{DATA_DIR}/tikhonov_train.txt')
-        x_test, y_test = read_BMES(f'{DATA_DIR}/tikhonov_test.txt')
+        x_train, y_train = read_BMES(data_folder / 'tikhonov_train.txt')
+        x_test, y_test = read_BMES(data_folder / 'tikhonov_test.txt')
         cls = Partitioner(nepochs=nepochs)
         cls.train(x_train, y_train, x_test, y_test, )
         self.model = cls
 
     def predict(self, lemma):
         prediction = predict_types(self.model, [lemma])[0]
-        # print(prediction)
         resulting_string = '/'.join([f"{x}:{y}" for x, y in zip(prediction[0], prediction[1])])
         return resulting_string
 
 
 def extract_morphemes(lemma, predictor):
-    with open(f"{DATA_DIR}/tikhonov.json", 'r') as f:
+    with open(data_folder / 'tikhonov.json', 'r') as f:
         tikhonov_dict = json.load(f)
     if lemma in tikhonov_dict:
         return tikhonov_dict[lemma]
