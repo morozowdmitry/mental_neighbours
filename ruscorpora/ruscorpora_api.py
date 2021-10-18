@@ -1,6 +1,6 @@
-import urllib.request
-from urllib.parse import quote, urlparse, parse_qs
-from bs4 import BeautifulSoup
+import requests
+import json
+
 
 import time
 
@@ -15,61 +15,50 @@ class RusCorpora(object):
         self.ambiguity = ambiguity
         url = self._create_url(quote(word), ambiguity)
         while True:
-            result, soup = self._get_soup(url)
-            if result:
-                return self._extract_frequency(soup)
-            elif not result and soup != 429:
-                return self._extract_frequency()
+            response = self._get_json(url)
+            if response.status_code == 200:
+                return self._extract_frequency_json(response.text)
 
     @staticmethod
     def _create_url(word, ambiguity=False):
         if ambiguity:
-            return f'http://processing.ruscorpora.ru/search.xml?'\
-                   f'mycorp=JSONeyJkb2NfaV90YWdnaW5nIjogWyIxIl19&'\
-                   f'mysize=6003397&'\
-                   f'mydocsize=2170&'\
-                   f'text=lexgramm&'\
-                   f'mode=main&'\
-                   f'lex1={word}'
+            # FIXME temporary disabled
+            # return f'https://processing.ruscorpora.ru/search.xml?'\
+            #        f'mycorp=JSONeyJkb2NfaV90YWdnaW5nIjogWyIxIl19&'\
+            #        f'mysize=6003397&'\
+            #        f'mydocsize=2170&'\
+            #        f'text=lexgramm&'\
+            #        f'mode=main&'\
+            #        f'lex1={word}'
+            return ''
         else:
-            return f'http://processing.ruscorpora.ru/search.xml?' \
+            return f'https://processing.ruscorpora.ru/search.xml?' \
                    f'text=lexgramm&' \
                    f'mode=main&' \
-                   f'lex1={word}'
+                   f'lex1={word}&' \
+                   f'format=json'
 
-    def _get_soup(self, url):
-        try:
-            soup_url = urllib.request.urlopen(url)
-        except urllib.error.HTTPError as e:
-            if e.code == 429:
-                time.sleep(self.sleeptime)
-                self.sleeptime += 10
-            return False, e.code
-        try:
-            soup = BeautifulSoup(soup_url, 'lxml')
-            return True, soup
-        except UnboundLocalError:
-            print(parse_qs(urlparse(url).query))
+    def _get_json(self, url):
+        response = requests.get(url)
+        if response.status_code == 429:
+            time.sleep(self.sleeptime)
+            self.sleeptime += 10
+        return response
 
-    def _extract_frequency(self, soup=None):
-        if not soup:
-            return {"total_words": 0,
-                    "total_docs": 0,
-                    "hits_words": 0,
-                    "hits_docs": 0}
-        all_stats = [x.get_text() for x in soup.find_all(class_="stat-number")]
-        if len(all_stats) == 0:
-            return {"total_words": 0,
-                    "total_docs": 0,
-                    "hits_words": 0,
-                    "hits_docs": 0}
-        if self.ambiguity:
-            total_docs, total_words, word_docs, word_uses = [int(x.replace(' ', '')) for x in all_stats[2:]]
-        else:
-            total_docs, total_words, word_docs, word_uses = [int(x.replace(' ', '')) for x in all_stats]
+    def _extract_frequency_json(self, response):
+        data = json.loads(response)
         frequency_chars = dict()
-        frequency_chars['total_words'] = total_words
-        frequency_chars['total_docs'] = total_docs
-        frequency_chars['hits_words'] = word_uses
-        frequency_chars['hits_docs'] = word_docs
+        frequency_chars['total_words'] = data['corp_stat']['stats'][1]['num']
+        frequency_chars['total_docs'] = data['corp_stat']['stats'][0]['num']
+        if data['found_stat']['stats']:
+            frequency_chars['hits_words'] = data['found_stat']['stats'][1]['num']
+            frequency_chars['hits_docs'] = data['found_stat']['stats'][0]['num']
+        else:
+            frequency_chars['hits_words'] = 0
+            frequency_chars['hits_docs'] = 0
         return frequency_chars
+
+
+if __name__ == "__main__":
+    corpora = RusCorpora()
+    print(corpora.get_corpora_chars('fsad'))
